@@ -98,3 +98,86 @@ func (cfg *apiConfig) handlerJob(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
+
+type applicantsResponse struct {
+	Name            string `json:"name"`
+	Email           string `json:"email"`
+	Address         string `json:"address"`
+	ProfileHeadline string `json:"profile_headline"`
+}
+
+func (cfg *apiConfig) handlerApplicants(w http.ResponseWriter, r *http.Request) {
+	data, err := cfg.db.GetApplicants(context.Background())
+	if err != nil {
+		log.Printf("error fetching applicants: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	res := []applicantsResponse{}
+	for _, val := range data {
+		i := applicantsResponse{
+			Name:            val.Name,
+			Email:           val.Email,
+			Address:         val.Address,
+			ProfileHeadline: val.ProfileHeadline,
+		}
+		res = append(res, i)
+	}
+
+	resp, err := json.Marshal(res)
+	if err != nil {
+		log.Printf("error encoding JSON: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
+}
+
+type applicantResponse struct {
+	Name            string `json:"name"`
+	Email           string `json:"email"`
+	Address         string `json:"address"`
+	ProfileHeadline string `json:"profile_headline"`
+	Resume          string `json:"resume"`
+	Skills          string `json:"skills"`
+	Education       string `json:"education"`
+	Phone           string `json:"phone"`
+}
+
+func (cfg *apiConfig) handlerApplicant(w http.ResponseWriter, r *http.Request) {
+	aID, err := strconv.Atoi(r.PathValue("applicant_id"))
+	if err != nil {
+		log.Printf("error in type changing: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	data, err := cfg.db.GetApplicant(context.Background(), int32(aID))
+	if err != nil {
+		log.Printf("error getting applicant: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.Marshal(applicantResponse{
+		Name:            data.Name,
+		Email:           data.Email,
+		Address:         data.Address,
+		ProfileHeadline: data.ProfileHeadline,
+		Resume:          data.ResumeFileAddress.String,
+		Skills:          data.Skills.String,
+		Education:       data.Education.String,
+		Phone:           data.Phone.String,
+	})
+	if err != nil {
+		log.Printf("error marshaling JSON: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
+}

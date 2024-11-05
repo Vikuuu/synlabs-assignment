@@ -22,8 +22,8 @@ SET profile_id = $1;
 
 -- name: UpdateProfile :one
 UPDATE profile
-SET name = $1, email = $2, phone=$3, skills = $4, education = $5
-WHERE applicant = $6
+SET name = $1, email = $2, phone=$3, skills = $4, education = $5, resume_file_address = $6
+WHERE applicant = $7
 RETURNING name, email, phone, skills, education;
 
 -- name: CreateJob :one
@@ -35,3 +35,14 @@ RETURNING id, title, description, posted_on, company_name, posted_by;
 SELECT title, description, posted_on, company_name, posted_by
 FROM job
 WHERE id = $1;
+
+-- name: GetApplicants :many
+SELECT name, email, address, profile_headline
+FROM users
+WHERE user_type = 'applicant';
+
+-- name: GetApplicant :one
+SELECT u.name, u.email, u.address, u.profile_headline, p.resume_file_address, p.skills, p.education, p.phone
+FROM users u
+JOIN profile p ON u.id = p.applicant
+WHERE u.id = $1;

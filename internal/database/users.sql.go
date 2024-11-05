@@ -117,6 +117,81 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	return i, err
 }
 
+const getApplicant = `-- name: GetApplicant :one
+SELECT u.name, u.email, u.address, u.profile_headline, p.resume_file_address, p.skills, p.education, p.phone
+FROM users u
+JOIN profile p ON u.id = p.applicant
+WHERE u.id = $1
+`
+
+type GetApplicantRow struct {
+	Name              string
+	Email             string
+	Address           string
+	ProfileHeadline   string
+	ResumeFileAddress sql.NullString
+	Skills            sql.NullString
+	Education         sql.NullString
+	Phone             sql.NullString
+}
+
+func (q *Queries) GetApplicant(ctx context.Context, id int32) (GetApplicantRow, error) {
+	row := q.db.QueryRowContext(ctx, getApplicant, id)
+	var i GetApplicantRow
+	err := row.Scan(
+		&i.Name,
+		&i.Email,
+		&i.Address,
+		&i.ProfileHeadline,
+		&i.ResumeFileAddress,
+		&i.Skills,
+		&i.Education,
+		&i.Phone,
+	)
+	return i, err
+}
+
+const getApplicants = `-- name: GetApplicants :many
+SELECT name, email, address, profile_headline
+FROM users
+WHERE user_type = 'applicant'
+`
+
+type GetApplicantsRow struct {
+	Name            string
+	Email           string
+	Address         string
+	ProfileHeadline string
+}
+
+func (q *Queries) GetApplicants(ctx context.Context) ([]GetApplicantsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getApplicants)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetApplicantsRow
+	for rows.Next() {
+		var i GetApplicantsRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.Email,
+			&i.Address,
+			&i.ProfileHeadline,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getJob = `-- name: GetJob :one
 SELECT title, description, posted_on, company_name, posted_by
 FROM job
@@ -176,18 +251,19 @@ func (q *Queries) GetUserFromID(ctx context.Context, id int32) (UserType, error)
 
 const updateProfile = `-- name: UpdateProfile :one
 UPDATE profile
-SET name = $1, email = $2, phone=$3, skills = $4, education = $5
-WHERE applicant = $6
+SET name = $1, email = $2, phone=$3, skills = $4, education = $5, resume_file_address = $6
+WHERE applicant = $7
 RETURNING name, email, phone, skills, education
 `
 
 type UpdateProfileParams struct {
-	Name      sql.NullString
-	Email     sql.NullString
-	Phone     sql.NullString
-	Skills    sql.NullString
-	Education sql.NullString
-	Applicant int32
+	Name              sql.NullString
+	Email             sql.NullString
+	Phone             sql.NullString
+	Skills            sql.NullString
+	Education         sql.NullString
+	ResumeFileAddress sql.NullString
+	Applicant         int32
 }
 
 type UpdateProfileRow struct {
@@ -205,6 +281,7 @@ func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (U
 		arg.Phone,
 		arg.Skills,
 		arg.Education,
+		arg.ResumeFileAddress,
 		arg.Applicant,
 	)
 	var i UpdateProfileRow

@@ -48,6 +48,8 @@ func main() {
 	mux.HandleFunc("POST /uploadResume", config.handlerUploadResume)
 	mux.Handle("POST /admin/job", config.WithAuthAdmin(config.handlerAddJob))
 	mux.Handle("GET /admin/job/{job_id}", config.WithAuthAdmin(config.handlerJob))
+	mux.Handle("GET /admin/applicants", config.WithAuthAdmin(config.handlerApplicants))
+	mux.Handle("GET /admin/applicant/{applicant_id}", config.WithAuthAdmin(config.handlerApplicant))
 
 	log.Printf("Serving on Port: %s\n", port)
 	log.Fatal(srv.ListenAndServe())

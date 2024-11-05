@@ -258,7 +258,7 @@ func (cfg *apiConfig) handlerUploadResume(w http.ResponseWriter, r *http.Request
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Response: %v", res)
+
 	// TODO: Decode the data from 3rd party API
 	apiPl := apiPayload{}
 	decoder = json.NewDecoder(res.Body)
@@ -278,12 +278,13 @@ func (cfg *apiConfig) handlerUploadResume(w http.ResponseWriter, r *http.Request
 	educations := strings.Join(e, ",")
 	// TODO: Save all the details into Applicant profile
 	dat, err := cfg.db.UpdateProfile(context.Background(), database.UpdateProfileParams{
-		Name:      sql.NullString{String: apiPl.Name, Valid: true},
-		Email:     sql.NullString{String: apiPl.Email, Valid: true},
-		Phone:     sql.NullString{String: apiPl.Phone, Valid: true},
-		Skills:    sql.NullString{String: skills, Valid: true},
-		Education: sql.NullString{String: educations, Valid: true},
-		Applicant: int32(userID),
+		Name:              sql.NullString{String: apiPl.Name, Valid: true},
+		Email:             sql.NullString{String: apiPl.Email, Valid: true},
+		Phone:             sql.NullString{String: apiPl.Phone, Valid: true},
+		Skills:            sql.NullString{String: skills, Valid: true},
+		Education:         sql.NullString{String: educations, Valid: true},
+		ResumeFileAddress: sql.NullString{String: payload.FileAddress, Valid: true},
+		Applicant:         int32(userID),
 	})
 	if err != nil {
 		log.Fatalf("error updating profile: %s", err)
