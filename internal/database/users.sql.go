@@ -90,3 +90,59 @@ func (q *Queries) GetUser(ctx context.Context, email string) (GetUserRow, error)
 	err := row.Scan(&i.ID, &i.PasswordHash, &i.UserType)
 	return i, err
 }
+
+const getUserFromID = `-- name: GetUserFromID :one
+SELECT user_type FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetUserFromID(ctx context.Context, id int32) (UserType, error) {
+	row := q.db.QueryRowContext(ctx, getUserFromID, id)
+	var user_type UserType
+	err := row.Scan(&user_type)
+	return user_type, err
+}
+
+const updateProfile = `-- name: UpdateProfile :one
+UPDATE profile
+SET name = $1, email = $2, phone=$3, skills = $4, education = $5
+WHERE applicant = $6
+RETURNING name, email, phone, skills, education
+`
+
+type UpdateProfileParams struct {
+	Name      sql.NullString
+	Email     sql.NullString
+	Phone     sql.NullString
+	Skills    sql.NullString
+	Education sql.NullString
+	Applicant int32
+}
+
+type UpdateProfileRow struct {
+	Name      sql.NullString
+	Email     sql.NullString
+	Phone     sql.NullString
+	Skills    sql.NullString
+	Education sql.NullString
+}
+
+func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (UpdateProfileRow, error) {
+	row := q.db.QueryRowContext(ctx, updateProfile,
+		arg.Name,
+		arg.Email,
+		arg.Phone,
+		arg.Skills,
+		arg.Education,
+		arg.Applicant,
+	)
+	var i UpdateProfileRow
+	err := row.Scan(
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Skills,
+		&i.Education,
+	)
+	return i, err
+}

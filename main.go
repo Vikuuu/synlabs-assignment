@@ -41,6 +41,7 @@ func main() {
 	mux.HandleFunc("GET /", handlerLandingPage)
 	mux.HandleFunc("POST /signup", config.handlerSignUp)
 	mux.HandleFunc("POST /login", config.handlerLogIn)
+	mux.HandleFunc("POST /uploadResume", config.handlerUploadResume)
 
 	log.Printf("Serving on Port: %s\n", port)
 	log.Fatal(srv.ListenAndServe())
