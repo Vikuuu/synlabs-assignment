@@ -47,6 +47,7 @@ func main() {
 	mux.HandleFunc("POST /login", config.handlerLogIn)
 	mux.HandleFunc("POST /uploadResume", config.handlerUploadResume)
 	mux.Handle("POST /admin/job", config.WithAuthAdmin(config.handlerAddJob))
+	mux.Handle("GET /admin/job/{job_id}", config.WithAuthAdmin(config.handlerJob))
 
 	log.Printf("Serving on Port: %s\n", port)
 	log.Fatal(srv.ListenAndServe())

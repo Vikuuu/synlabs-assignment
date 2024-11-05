@@ -117,6 +117,33 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	return i, err
 }
 
+const getJob = `-- name: GetJob :one
+SELECT title, description, posted_on, company_name, posted_by
+FROM job
+WHERE id = $1
+`
+
+type GetJobRow struct {
+	Title       string
+	Description string
+	PostedOn    time.Time
+	CompanyName string
+	PostedBy    int32
+}
+
+func (q *Queries) GetJob(ctx context.Context, id int32) (GetJobRow, error) {
+	row := q.db.QueryRowContext(ctx, getJob, id)
+	var i GetJobRow
+	err := row.Scan(
+		&i.Title,
+		&i.Description,
+		&i.PostedOn,
+		&i.CompanyName,
+		&i.PostedBy,
+	)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, password_hash, user_type FROM users
 WHERE email = $1

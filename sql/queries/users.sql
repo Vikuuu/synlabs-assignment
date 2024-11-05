@@ -30,3 +30,8 @@ RETURNING name, email, phone, skills, education;
 INSERT INTO job (title, description, posted_on, company_name, posted_by)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING id, title, description, posted_on, company_name, posted_by;
+
+-- name: GetJob :one
+SELECT title, description, posted_on, company_name, posted_by
+FROM job
+WHERE id = $1;

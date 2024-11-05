@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Vikuuu/synlabs-assignment/internal/database"
@@ -60,5 +61,40 @@ func (cfg *apiConfig) handlerAddJob(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	w.Write(resp)
+}
+
+type jobResponse struct {
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	PostedOn    time.Time `json:"posted_on"`
+	CompanyName string    `json:"company_name"`
+	PostedBy    int32     `json:"posted_by"`
+}
+
+func (cfg *apiConfig) handlerJob(w http.ResponseWriter, r *http.Request) {
+	jobID, err := strconv.Atoi(r.PathValue("job_id"))
+	if err != nil {
+		log.Printf("error in type changing: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	data, err := cfg.db.GetJob(context.Background(), int32(jobID))
+	if err != nil {
+		respondWithError(w, "error getting job", http.StatusNotFound)
+		return
+	}
+
+	resp, err := json.Marshal(jobResponse{
+		Title:       data.Title,
+		Description: data.Description,
+		PostedOn:    data.PostedOn,
+		CompanyName: data.CompanyName,
+		PostedBy:    data.PostedBy,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
