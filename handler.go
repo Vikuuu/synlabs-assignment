@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Vikuuu/synlabs-assignment/internal/auth"
 	"github.com/Vikuuu/synlabs-assignment/internal/database"
@@ -76,6 +78,66 @@ func (cfg *apiConfig) handlerSignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(resp)
+}
+
+type loginPayload struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type loginResponse struct {
+	AccessToken string            `json:"access_token"`
+	UserType    database.UserType `json:"user_type"`
+}
+
+func (cfg *apiConfig) handlerLogIn(w http.ResponseWriter, r *http.Request) {
+	payload := loginPayload{}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&payload)
+	if err != nil {
+		log.Fatalf("error decoding JSON: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// get user data from the table
+	user, err := cfg.db.GetUser(context.Background(), payload.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			errMsg := "Invalid credentials"
+			respondWithError(w, errMsg, http.StatusUnauthorized)
+			return
+		} else {
+			log.Fatalf("error getting user: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+	err = auth.CheckPassword(payload.Password, user.PasswordHash)
+	if err != nil {
+		errMsg := "Invalid credentials"
+		respondWithError(w, errMsg, http.StatusUnauthorized)
+		return
+	}
+
+	// create jwt and return the response
+	expiresIn := time.Hour
+	tokenSecret := cfg.secret
+
+	jwtToken, err := auth.MakeJWT(user.ID, tokenSecret, expiresIn)
+	if err != nil {
+		log.Fatalf("error creating JWT: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.Marshal(loginResponse{
+		AccessToken: jwtToken,
+		UserType:    user.UserType,
+	})
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)

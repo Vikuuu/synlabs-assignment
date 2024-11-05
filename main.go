@@ -13,7 +13,8 @@ import (
 )
 
 type apiConfig struct {
-	db *database.Queries
+	db     *database.Queries
+	secret string
 }
 
 func main() {
@@ -27,7 +28,8 @@ func main() {
 	defer db.Close()
 
 	config := apiConfig{
-		db: database.New(db),
+		db:     database.New(db),
+		secret: os.Getenv("SECRET"),
 	}
 
 	mux := http.NewServeMux()
@@ -38,6 +40,7 @@ func main() {
 
 	mux.HandleFunc("GET /", handlerLandingPage)
 	mux.HandleFunc("POST /signup", config.handlerSignUp)
+	mux.HandleFunc("POST /login", config.handlerLogIn)
 
 	log.Printf("Serving on Port: %s\n", port)
 	log.Fatal(srv.ListenAndServe())
