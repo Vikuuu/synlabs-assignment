@@ -65,7 +65,7 @@ type Job struct {
 
 type Profile struct {
 	Applicant         int32
-	ResumeFileAddress string
+	ResumeFileAddress sql.NullString
 	Skills            sql.NullString
 	Education         sql.NullString
 	Name              sql.NullString

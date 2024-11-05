@@ -7,12 +7,35 @@ package database
 
 import (
 	"context"
+	"database/sql"
 )
+
+const addProfileIDInUser = `-- name: AddProfileIDInUser :exec
+UPDATE users
+SET profile_id = $1
+`
+
+func (q *Queries) AddProfileIDInUser(ctx context.Context, profileID sql.NullInt32) error {
+	_, err := q.db.ExecContext(ctx, addProfileIDInUser, profileID)
+	return err
+}
+
+const createApplicantProfile = `-- name: CreateApplicantProfile :one
+INSERT INTO profile (applicant)
+VALUES ($1)
+RETURNING applicant
+`
+
+func (q *Queries) CreateApplicantProfile(ctx context.Context, applicant int32) (int32, error) {
+	row := q.db.QueryRowContext(ctx, createApplicantProfile, applicant)
+	err := row.Scan(&applicant)
+	return applicant, err
+}
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (name, email, address, user_type, password_hash, profile_headline)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING name, email, user_type
+RETURNING id, name, email, user_type
 `
 
 type CreateUserParams struct {
@@ -25,6 +48,7 @@ type CreateUserParams struct {
 }
 
 type CreateUserRow struct {
+	ID       int32
 	Name     string
 	Email    string
 	UserType UserType
@@ -40,7 +64,12 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		arg.ProfileHeadline,
 	)
 	var i CreateUserRow
-	err := row.Scan(&i.Name, &i.Email, &i.UserType)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.UserType,
+	)
 	return i, err
 }
 

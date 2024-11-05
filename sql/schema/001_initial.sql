@@ -14,7 +14,7 @@ CREATE TABLE users (
 
 CREATE TABLE profile (
     applicant INT PRIMARY KEY REFERENCES users(id),
-    resume_file_address TEXT NOT NULL,
+    resume_file_address TEXT,
     skills TEXT,
     education TEXT,
     name TEXT,
@@ -40,6 +40,7 @@ CREATE TABLE job (
 
 -- +goose Down
 DROP TABLE job;
+ALTER TABLE users DROP CONSTRAINT fk_profile;
 DROP TABLE profile;
 DROP TABLE users;
-DROP TYPE type;
+DROP TYPE user_type;

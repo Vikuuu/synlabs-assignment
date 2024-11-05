@@ -81,6 +81,23 @@ func (cfg *apiConfig) handlerSignUp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(resp)
+
+	if userType == "applicant" {
+		appID, err := cfg.db.CreateApplicantProfile(context.Background(), dat.ID)
+		if err != nil {
+			log.Fatalf("error creating applicant profile: %s", err)
+			return
+		}
+
+		err = cfg.db.AddProfileIDInUser(
+			context.Background(),
+			sql.NullInt32{Int32: appID, Valid: true},
+		)
+		if err != nil {
+			log.Fatalf("error adding profile_id: %s", err)
+			return
+		}
+	}
 }
 
 type loginPayload struct {
