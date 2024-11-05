@@ -21,6 +21,21 @@ func (q *Queries) AddProfileIDInUser(ctx context.Context, profileID sql.NullInt3
 	return err
 }
 
+const applyJob = `-- name: ApplyJob :exec
+INSERT INTO apply_jobs (applicant_id, job_id)
+VALUES ($1, $2)
+`
+
+type ApplyJobParams struct {
+	ApplicantID sql.NullInt32
+	JobID       sql.NullInt32
+}
+
+func (q *Queries) ApplyJob(ctx context.Context, arg ApplyJobParams) error {
+	_, err := q.db.ExecContext(ctx, applyJob, arg.ApplicantID, arg.JobID)
+	return err
+}
+
 const createApplicantProfile = `-- name: CreateApplicantProfile :one
 INSERT INTO profile (applicant)
 VALUES ($1)
@@ -193,17 +208,18 @@ func (q *Queries) GetApplicants(ctx context.Context) ([]GetApplicantsRow, error)
 }
 
 const getJob = `-- name: GetJob :one
-SELECT title, description, posted_on, company_name, posted_by
+SELECT title, description, posted_on, company_name, posted_by, total_applications
 FROM job
 WHERE id = $1
 `
 
 type GetJobRow struct {
-	Title       string
-	Description string
-	PostedOn    time.Time
-	CompanyName string
-	PostedBy    int32
+	Title             string
+	Description       string
+	PostedOn          time.Time
+	CompanyName       string
+	PostedBy          int32
+	TotalApplications sql.NullInt32
 }
 
 func (q *Queries) GetJob(ctx context.Context, id int32) (GetJobRow, error) {
@@ -215,8 +231,53 @@ func (q *Queries) GetJob(ctx context.Context, id int32) (GetJobRow, error) {
 		&i.PostedOn,
 		&i.CompanyName,
 		&i.PostedBy,
+		&i.TotalApplications,
 	)
 	return i, err
+}
+
+const getJobsApplicant = `-- name: GetJobsApplicant :many
+SELECT title, description, posted_on, total_applications, company_name, posted_by
+FROM job
+`
+
+type GetJobsApplicantRow struct {
+	Title             string
+	Description       string
+	PostedOn          time.Time
+	TotalApplications sql.NullInt32
+	CompanyName       string
+	PostedBy          int32
+}
+
+func (q *Queries) GetJobsApplicant(ctx context.Context) ([]GetJobsApplicantRow, error) {
+	rows, err := q.db.QueryContext(ctx, getJobsApplicant)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetJobsApplicantRow
+	for rows.Next() {
+		var i GetJobsApplicantRow
+		if err := rows.Scan(
+			&i.Title,
+			&i.Description,
+			&i.PostedOn,
+			&i.TotalApplications,
+			&i.CompanyName,
+			&i.PostedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUser = `-- name: GetUser :one
@@ -293,4 +354,15 @@ func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (U
 		&i.Education,
 	)
 	return i, err
+}
+
+const updateTotalApplications = `-- name: UpdateTotalApplications :exec
+UPDATE job
+SET total_applications = total_applications + 1
+WHERE id = $1
+`
+
+func (q *Queries) UpdateTotalApplications(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, updateTotalApplications, id)
+	return err
 }

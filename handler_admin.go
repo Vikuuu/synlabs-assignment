@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -65,11 +66,12 @@ func (cfg *apiConfig) handlerAddJob(w http.ResponseWriter, r *http.Request) {
 }
 
 type jobResponse struct {
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	PostedOn    time.Time `json:"posted_on"`
-	CompanyName string    `json:"company_name"`
-	PostedBy    int32     `json:"posted_by"`
+	Title             string        `json:"title"`
+	Description       string        `json:"description"`
+	PostedOn          time.Time     `json:"posted_on"`
+	CompanyName       string        `json:"company_name"`
+	PostedBy          int32         `json:"posted_by"`
+	TotalApplications sql.NullInt32 `json:"total_applications"`
 }
 
 func (cfg *apiConfig) handlerJob(w http.ResponseWriter, r *http.Request) {
@@ -87,11 +89,12 @@ func (cfg *apiConfig) handlerJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, err := json.Marshal(jobResponse{
-		Title:       data.Title,
-		Description: data.Description,
-		PostedOn:    data.PostedOn,
-		CompanyName: data.CompanyName,
-		PostedBy:    data.PostedBy,
+		Title:             data.Title,
+		Description:       data.Description,
+		PostedOn:          data.PostedOn,
+		CompanyName:       data.CompanyName,
+		PostedBy:          data.PostedBy,
+		TotalApplications: data.TotalApplications,
 	})
 
 	w.Header().Set("Content-Type", "application/json")

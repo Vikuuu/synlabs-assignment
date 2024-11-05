@@ -21,6 +21,10 @@ func (cfg *apiConfig) WithAuthAdmin(handler http.HandlerFunc) http.Handler {
 	return cfg.middlewareIsAdmin(handler)
 }
 
+func (cfg *apiConfig) WithAuthApplicant(handler http.HandlerFunc) http.Handler {
+	return cfg.middlewareIsApplicant(handler)
+}
+
 func main() {
 	godotenv.Load()
 	port := os.Getenv("PORT")
@@ -50,6 +54,8 @@ func main() {
 	mux.Handle("GET /admin/job/{job_id}", config.WithAuthAdmin(config.handlerJob))
 	mux.Handle("GET /admin/applicants", config.WithAuthAdmin(config.handlerApplicants))
 	mux.Handle("GET /admin/applicant/{applicant_id}", config.WithAuthAdmin(config.handlerApplicant))
+	mux.Handle("GET /jobs", config.WithAuthApplicant(config.handlerViewJobs))
+	mux.Handle("GET /jobs/apply", config.WithAuthApplicant(config.handlerApplyJob))
 
 	log.Printf("Serving on Port: %s\n", port)
 	log.Fatal(srv.ListenAndServe())

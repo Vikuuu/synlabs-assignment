@@ -32,7 +32,7 @@ VALUES ($1, $2, $3, $4, $5)
 RETURNING id, title, description, posted_on, company_name, posted_by;
 
 -- name: GetJob :one
-SELECT title, description, posted_on, company_name, posted_by
+SELECT title, description, posted_on, company_name, posted_by, total_applications
 FROM job
 WHERE id = $1;
 
@@ -46,3 +46,16 @@ SELECT u.name, u.email, u.address, u.profile_headline, p.resume_file_address, p.
 FROM users u
 JOIN profile p ON u.id = p.applicant
 WHERE u.id = $1;
+
+-- name: GetJobsApplicant :many
+SELECT title, description, posted_on, total_applications, company_name, posted_by
+FROM job;
+
+-- name: ApplyJob :exec
+INSERT INTO apply_jobs (applicant_id, job_id)
+VALUES ($1, $2);
+
+-- name: UpdateTotalApplications :exec
+UPDATE job
+SET total_applications = total_applications + 1
+WHERE id = $1;

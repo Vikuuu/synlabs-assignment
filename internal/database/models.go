@@ -53,6 +53,11 @@ func (ns NullUserType) Value() (driver.Value, error) {
 	return string(ns.UserType), nil
 }
 
+type ApplyJob struct {
+	ApplicantID sql.NullInt32
+	JobID       sql.NullInt32
+}
+
 type Job struct {
 	ID                int32
 	Title             string
