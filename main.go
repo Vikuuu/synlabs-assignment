@@ -17,6 +17,10 @@ type apiConfig struct {
 	secret string
 }
 
+func (cfg *apiConfig) WithAuthAdmin(handler http.HandlerFunc) http.Handler {
+	return cfg.middlewareIsAdmin(handler)
+}
+
 func main() {
 	godotenv.Load()
 	port := os.Getenv("PORT")
@@ -42,6 +46,7 @@ func main() {
 	mux.HandleFunc("POST /signup", config.handlerSignUp)
 	mux.HandleFunc("POST /login", config.handlerLogIn)
 	mux.HandleFunc("POST /uploadResume", config.handlerUploadResume)
+	mux.Handle("POST /admin/job", config.WithAuthAdmin(config.handlerAddJob))
 
 	log.Printf("Serving on Port: %s\n", port)
 	log.Fatal(srv.ListenAndServe())

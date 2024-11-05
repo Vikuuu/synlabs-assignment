@@ -25,3 +25,8 @@ UPDATE profile
 SET name = $1, email = $2, phone=$3, skills = $4, education = $5
 WHERE applicant = $6
 RETURNING name, email, phone, skills, education;
+
+-- name: CreateJob :one
+INSERT INTO job (title, description, posted_on, company_name, posted_by)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, title, description, posted_on, company_name, posted_by;

@@ -8,6 +8,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const addProfileIDInUser = `-- name: AddProfileIDInUser :exec
@@ -30,6 +31,49 @@ func (q *Queries) CreateApplicantProfile(ctx context.Context, applicant int32) (
 	row := q.db.QueryRowContext(ctx, createApplicantProfile, applicant)
 	err := row.Scan(&applicant)
 	return applicant, err
+}
+
+const createJob = `-- name: CreateJob :one
+INSERT INTO job (title, description, posted_on, company_name, posted_by)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, title, description, posted_on, company_name, posted_by
+`
+
+type CreateJobParams struct {
+	Title       string
+	Description string
+	PostedOn    time.Time
+	CompanyName string
+	PostedBy    int32
+}
+
+type CreateJobRow struct {
+	ID          int32
+	Title       string
+	Description string
+	PostedOn    time.Time
+	CompanyName string
+	PostedBy    int32
+}
+
+func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (CreateJobRow, error) {
+	row := q.db.QueryRowContext(ctx, createJob,
+		arg.Title,
+		arg.Description,
+		arg.PostedOn,
+		arg.CompanyName,
+		arg.PostedBy,
+	)
+	var i CreateJobRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.PostedOn,
+		&i.CompanyName,
+		&i.PostedBy,
+	)
+	return i, err
 }
 
 const createUser = `-- name: CreateUser :one
